@@ -1,4 +1,3 @@
-POST _bulk
 {"index":{"_id":"ByYlXJgB87F1AivbmmfL","_index":"ubi_queries"}}
 {"query_response_id":"03e8af3e-8725-49d9-99ad-36bf2a8e96d1","user_query":"fahrenheit","query_id":"f8b2f5bc-cb3c-49d4-86bc-19212a782ba7","query_response_object_ids":["3","9"],"query":"{\"from\":0,\"size\":20,\"query\":{\"multi_match\":{\"query\":\"fahrenheit\",\"fields\":[\"author^1.0\",\"name^1.0\"]}},\"_source\":{\"includes\":[\"name\",\"author\",\"image_url\",\"url\",\"price\",\"release_date\"],\"excludes\":[]},\"sort\":[{\"_score\":{\"order\":\"desc\"}}],\"ext\":{\"query_id\":\"f8b2f5bc-cb3c-49d4-86bc-19212a782ba7\",\"user_query\":\"fahrenheit\",\"client_id\":\"8c1915fe-8ee0-4487-b801-3b1d67c25cf6\",\"object_id_field\":null,\"query_attributes\":{}}}","query_attributes":{},"client_id":"8c1915fe-8ee0-4487-b801-3b1d67c25cf6","timestamp":1753885225098}
 {"index":{"_id":"wSYlXJgB87F1AivbSmUW","_index":"ubi_queries"}}
