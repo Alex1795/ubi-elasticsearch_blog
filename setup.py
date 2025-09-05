@@ -3,6 +3,8 @@ import os
 import sys
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+import requests
+import time
 
 
 def read_mapping_file(filename="mapping.json"):
@@ -143,6 +145,76 @@ def bulk_index_documents(es, filename="sample_data.ndjson"):
         return False
 
 
+def upload_kibana_saved_objects(kibana_host, api_key, filename="saved_objects.ndjson"):
+    """
+    Upload saved objects to Kibana from an NDJSON file
+    """
+    url = f"{kibana_host.rstrip('/')}/api/saved_objects/_import"
+
+    headers = {
+        'Authorization': f'ApiKey {api_key}',
+        'kbn-xsrf': 'true'  # Required header for Kibana API
+    }
+
+    try:
+        # Read the NDJSON file
+        with open(filename, 'rb') as f:
+            files = {
+                'file': (filename, f, 'application/x-ndjson')
+            }
+
+            # Optional parameters for import behavior
+            params = {
+                'overwrite': 'true',  # Overwrite existing objects with same ID
+                'createNewCopies': 'false'  # Don't create new copies, update existing
+            }
+
+            print(f"📤 Uploading saved objects from {filename} to Kibana...")
+
+            response = requests.post(
+                url,
+                headers=headers,
+                files=files,
+                params=params,
+                verify=True
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+
+                success_count = result.get('successCount', 0)
+                errors = result.get('errors', [])
+
+                print(f"✓ Successfully imported {success_count} saved objects")
+
+                if errors:
+                    print(f"⚠ {len(errors)} errors occurred during import:")
+                    for error in errors[:5]:  # Show first 5 errors
+                        obj_type = error.get('type', 'unknown')
+                        obj_id = error.get('id', 'unknown')
+                        error_msg = error.get('error', {}).get('message', 'Unknown error')
+                        print(f"  - {obj_type}:{obj_id} - {error_msg}")
+                    if len(errors) > 5:
+                        print(f"  ... and {len(errors) - 5} more errors")
+
+                return len(errors) == 0  # Return True only if no errors
+
+            else:
+                print(f"✗ Failed to upload saved objects: {response.status_code}")
+                print(f"Response: {response.text}")
+                return False
+
+    except FileNotFoundError:
+        print(f"✗ Error: {filename} not found")
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"✗ Error uploading to Kibana: {e}")
+        return False
+    except Exception as e:
+        print(f"✗ Unexpected error: {e}")
+        return False
+
+
 def main():
     """Main function to control the script flow"""
     print("🚀 Starting Elasticsearch index creation and data loading...")
@@ -150,6 +222,7 @@ def main():
     # Get environment variables
     es_host = os.getenv('ES_HOST')
     api_key = os.getenv('API_KEY')
+    kibana_host = os.getenv('KIBANA_HOST')
 
     if not es_host:
         print("✗ Error: ES_HOST environment variable not set")
@@ -185,8 +258,12 @@ def main():
     if not bulk_index_documents(es, "sample_documents/bulk_index.ndjson"):
         sys.exit(1)
 
+    upload_kibana_saved_objects(kibana_host, api_key, "dashboards/web_analytics_dashboard.ndjson")
+
     print("🎉 Script completed successfully!")
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     main()
+    print("Total time: %s seconds " % (time.time() - start_time))
